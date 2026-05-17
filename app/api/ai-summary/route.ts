@@ -2,37 +2,30 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   const { content } = await req.json();
-
-  if (!content?.trim()) {
-    return NextResponse.json({ summary: 'No content to summarize.' });
-  }
+  if (!content?.trim()) return NextResponse.json({ summary: 'No content.' });
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('https://api.opentyphoon.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY || '',
-        'anthropic-version': '2023-06-01',
+        'Authorization': `Bearer ${process.env.TYPHOON_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'typhoon-v2.1-12b-instruct',
         max_tokens: 300,
-        messages: [{
-          role: 'user',
-          content: `Summarize this note in 2-3 concise sentences. Be direct and capture the key points:\n\n${content}`,
-        }],
+        messages: [
+          {
+            role: 'user',
+            content: `สรุปโน้ตนี้ให้กระชับใน 2-3 ประโยค:\n\n${content.slice(0, 3000)}`,
+          }
+        ],
       }),
     });
-
-    if (!response.ok) {
-      return NextResponse.json({ summary: 'AI service unavailable. Please try again.' });
-    }
-
     const data = await response.json();
-    const summary = data.content?.[0]?.text ?? 'Could not generate summary.';
+    const summary = data.choices?.[0]?.message?.content ?? 'ไม่สามารถสรุปได้';
     return NextResponse.json({ summary });
   } catch {
-    return NextResponse.json({ summary: 'AI summary failed. Please check your connection.' });
+    return NextResponse.json({ summary: 'AI ไม่พร้อมใช้งาน' });
   }
 }
